@@ -67,8 +67,6 @@ namespace NIDebugger_Test
             opts.executable = @"c:\windows\system32\notepad.exe";
             opts.resumeOnCreate = false;
 
-            uint oldValue;
-            String oldString;
             debug.Execute(opts)
                 .AllocateMemory(100, out memoryCave)
                 .WriteString(memoryCave, "Welcome To NIDebugger", Encoding.Unicode)

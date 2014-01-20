@@ -35,7 +35,7 @@ namespace UPXUnpacker
             NonIntrusive.NIDumpOptions dumpOpts = new NonIntrusive.NIDumpOptions();
             NonIntrusive.NISearchOptions searchOpts = new NonIntrusive.NISearchOptions();
 
-            uint[] list = new uint[1000];
+            List<uint> list = new List<uint>();
 
             opts.executable = target;
             opts.resumeOnCreate = false;
@@ -51,7 +51,7 @@ namespace UPXUnpacker
             debugger.Execute(opts);
 
             debugger.SearchMemory(searchOpts, out list);
-            if (list.Length > 0)
+            if (list.Count > 0)
             {
                 Console.WriteLine("Setting BreakPoint: " + (list[0] - debugger.ProcessImageBase).ToString("X8"));
                 debugger.SetBreakpoint(list[0]).Continue().SingleStep();
@@ -72,6 +72,27 @@ namespace UPXUnpacker
                 }
 
                 Console.WriteLine("OEP: " + newOEP.ToString("X8"));
+
+                /* NOTE: THIS FOLLOWING CODE DOES NOT WORK AS OF YET!!
+                uint iatStart = 0;
+                uint iatSize = 0;
+                
+                NonIntrusive.ScyllaIAT.scylla_searchIAT(debugger.Process.Id, ref iatStart, ref iatSize, newOEP + debugger.ProcessImageBase, false);
+                if (iatSize > 0)
+                {
+                    NonIntrusive.SCYLLA_IATFIX_API getImps = NonIntrusive.ScyllaIAT.scylla_getImports(iatStart, iatSize, debugger.Process.Id);
+                    
+                    Console.WriteLine("IAT Start: " + iatStart.ToString("X8"));
+                    Console.WriteLine("IAT Size: " + iatSize.ToString("X8"));
+                    Console.WriteLine("getImports: " + getImps);
+
+                    if (NonIntrusive.ScyllaIAT.scylla_importsValid())
+                    {
+                        NonIntrusive.SCYLLA_IATFIX_API check = NonIntrusive.ScyllaIAT.scylla_fixDump(dumpOpts.OutputPath, dumpOpts.OutputPath + "_fixed.exe", ".txte");
+                        Console.WriteLine("fixDump: " + check.ToString());
+                    }
+                }
+                 */
                 Console.WriteLine("All done... Fix imports and press any key to exit!");
                 Console.ReadKey();
 

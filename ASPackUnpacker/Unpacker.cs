@@ -32,7 +32,7 @@ namespace ASPackUnpacker
             NonIntrusive.NIDumpOptions dumpOpts = new NonIntrusive.NIDumpOptions();
             NonIntrusive.NISearchOptions searchOpts = new NonIntrusive.NISearchOptions();
 
-            uint[] list = new uint[1000];
+            List<uint> list = new List<uint>();
 
             opts.executable = toBeUnpacked;
             opts.resumeOnCreate = false;
@@ -48,7 +48,7 @@ namespace ASPackUnpacker
             debugger.Execute(opts);
 
             debugger.SearchMemory(searchOpts, out list);
-            if (list.Length > 0)
+            if (list.Count > 0)
             {
                 myForm.AddLog("Setting BP#1: " + (list[0] - debugger.ProcessImageBase).ToString("X8"));
                 debugger.SetBreakpoint(list[0]).Continue().SingleStep(3);
@@ -66,7 +66,7 @@ namespace ASPackUnpacker
                 }
                 catch
                 {
-                    MessageBox.Show("Seems to have some problems clearing and setting the clipboard :(" + Environment.NewLine + "OEP: " + newOEP.ToString("X8"));
+                    MessageBox.Show("Seems to have some problems clearing and setting the clipboard :(" + Environment.NewLine + "OEP: " + (newOEP + debugger.ProcessImageBase).ToString("X8"));
                 }
                 
                 MessageBox.Show("Now fix the imports!");

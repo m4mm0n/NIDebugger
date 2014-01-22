@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -59,18 +60,28 @@ namespace ASPackUnpacker
                 debugger.DumpProcess(dumpOpts);
                 myForm.AddLog("OEP: " + newOEP.ToString("X8"));
 
+                uint iatStart = 0;
+                uint iatSize = 0;
+                IntPtr errorCode = Marshal.AllocHGlobal(1000);
+
                 try
                 {
-                    Clipboard.Clear();
-                    Clipboard.SetText(newOEP.ToString("X8"));
+                    NonIntrusive.ARImpRec.SearchAndRebuildImports((uint)debugger.Process.Id, dumpOpts.OutputPath, newOEP + debugger.ProcessImageBase, 1, out iatStart, out iatSize, errorCode);
+
+                    myForm.AddLog("IAT Start: " + iatStart.ToString("X8"));
+                    myForm.AddLog("IAT Size: " + iatSize.ToString("X8"));
+                    myForm.AddLog("ReturnCode: " + Marshal.PtrToStringAnsi(errorCode));
+
+                    Marshal.FreeHGlobal(errorCode);
+                    myForm.AddLog("Now fully unpacked - enjoy!");
+
+                    debugger.Detach().Terminate();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Seems to have some problems clearing and setting the clipboard :(" + Environment.NewLine + "OEP: " + (newOEP + debugger.ProcessImageBase).ToString("X8"));
+                    myForm.AddLog(ex.Message);
+                    debugger.Detach().Terminate();
                 }
-                
-                MessageBox.Show("Now fix the imports!");
-                debugger.Detach().Terminate();
             }
             else
             {

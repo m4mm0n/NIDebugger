@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
@@ -73,30 +74,30 @@ namespace UPXUnpacker
 
                 Console.WriteLine("OEP: " + newOEP.ToString("X8"));
 
-                /* NOTE: THIS FOLLOWING CODE DOES NOT WORK AS OF YET!!
+                Console.WriteLine("ProcessID: " + debugger.Process.Id.ToString("X8"));
+                
                 uint iatStart = 0;
                 uint iatSize = 0;
+                IntPtr errorCode = Marshal.AllocHGlobal(1000);
                 
-                NonIntrusive.ScyllaIAT.scylla_searchIAT(debugger.Process.Id, ref iatStart, ref iatSize, newOEP + debugger.ProcessImageBase, false);
-                if (iatSize > 0)
+                try
                 {
-                    NonIntrusive.SCYLLA_IATFIX_API getImps = NonIntrusive.ScyllaIAT.scylla_getImports(iatStart, iatSize, debugger.Process.Id);
-                    
+                    NonIntrusive.ARImpRec.SearchAndRebuildImportsIATOptimized((uint)debugger.Process.Id, dumpOpts.OutputPath, newOEP + debugger.ProcessImageBase, 1, out iatStart, out iatSize, errorCode);
                     Console.WriteLine("IAT Start: " + iatStart.ToString("X8"));
                     Console.WriteLine("IAT Size: " + iatSize.ToString("X8"));
-                    Console.WriteLine("getImports: " + getImps);
+                    Console.WriteLine("ReturnCode: " + Marshal.PtrToStringAnsi(errorCode));
 
-                    if (NonIntrusive.ScyllaIAT.scylla_importsValid())
-                    {
-                        NonIntrusive.SCYLLA_IATFIX_API check = NonIntrusive.ScyllaIAT.scylla_fixDump(dumpOpts.OutputPath, dumpOpts.OutputPath + "_fixed.exe", ".txte");
-                        Console.WriteLine("fixDump: " + check.ToString());
-                    }
+                    Marshal.FreeHGlobal(errorCode);
+                    debugger.Detach().Terminate();
                 }
-                 */
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    debugger.Detach().Terminate();
+                }
+
                 Console.WriteLine("All done... Fix imports and press any key to exit!");
                 Console.ReadKey();
-
-                debugger.Detach().Terminate();
             }
         }
     }

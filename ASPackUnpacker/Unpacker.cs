@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -32,9 +33,7 @@ namespace ASPackUnpacker
             NonIntrusive.NIDumpOptions dumpOpts = new NonIntrusive.NIDumpOptions();
             NonIntrusive.NISearchOptions searchOpts = new NonIntrusive.NISearchOptions();
 
-            uint y = 0;
-            //Just in case, we use the count of 1k...
-            uint[] list = new uint[1000];
+            List<uint> list = new List<uint>();
 
             opts.executable = toBeUnpacked;
             opts.resumeOnCreate = false;
@@ -50,29 +49,39 @@ namespace ASPackUnpacker
             debugger.Execute(opts);
 
             debugger.SearchMemory(searchOpts, out list);
-            if (list[0] > 0)
+            if (list.Count > 0)
             {
-                myForm.AddLog("Setting BP#1: " + (list[0] - (uint)debugger.Process.MainModule.BaseAddress.ToInt32()).ToString("X8"));
+                myForm.AddLog("Setting BP#1: " + (list[0] - debugger.ProcessImageBase).ToString("X8"));
                 debugger.SetBreakpoint(list[0]).Continue().SingleStep(3);
 
-                uint newOEP = debugger.Context.Eip - (uint)debugger.Process.MainModule.BaseAddress.ToInt32();
+                uint newOEP = debugger.Context.Eip - debugger.ProcessImageBase;
                 dumpOpts.EntryPoint = newOEP;
 
                 debugger.DumpProcess(dumpOpts);
                 myForm.AddLog("OEP: " + newOEP.ToString("X8"));
 
+                uint iatStart = 0;
+                uint iatSize = 0;
+                IntPtr errorCode = Marshal.AllocHGlobal(1000);
+
                 try
                 {
-                    Clipboard.Clear();
-                    Clipboard.SetText(newOEP.ToString("X8"));
+                    NonIntrusive.ARImpRec.SearchAndRebuildImports((uint)debugger.Process.Id, dumpOpts.OutputPath, newOEP + debugger.ProcessImageBase, 1, out iatStart, out iatSize, errorCode);
+
+                    myForm.AddLog("IAT Start: " + iatStart.ToString("X8"));
+                    myForm.AddLog("IAT Size: " + iatSize.ToString("X8"));
+                    myForm.AddLog("ReturnCode: " + Marshal.PtrToStringAnsi(errorCode));
+
+                    Marshal.FreeHGlobal(errorCode);
+                    myForm.AddLog("Now fully unpacked - enjoy!");
+
+                    debugger.Detach().Terminate();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    MessageBox.Show("Seems to have some problems clearing and setting the clipboard :(" + Environment.NewLine + "OEP: " + newOEP.ToString("X8"));
+                    myForm.AddLog(ex.Message);
+                    debugger.Detach().Terminate();
                 }
-                
-                MessageBox.Show("Now fix the imports!");
-                debugger.Detach().Terminate();
             }
             else
             {

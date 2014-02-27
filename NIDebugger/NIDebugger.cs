@@ -271,7 +271,7 @@ namespace NonIntrusive
         /// <param name="opts">The SearchOptions to be used to perform the search.</param>
         /// <param name="results">The output array that will hold addresses where a match was found.</param>
         /// <returns></returns>
-        public NIDebugger SearchMemory(NISearchOptions opts , out uint[] results)
+        public NIDebugger SearchMemory(NISearchOptions opts, out List<uint> results)
         {
             
 
@@ -315,7 +315,7 @@ namespace NonIntrusive
                                     list.Add(i + (uint)j);
                                     if (list.Count == opts.MaxOccurs && opts.MaxOccurs != -1)
                                     { 
-                                        results = list.ToArray();
+                                        results = list;
                                         return this;
                                     }
                                 }
@@ -326,7 +326,7 @@ namespace NonIntrusive
                     i += mbi.RegionSize;
                 }
             }
-            results = list.ToArray();
+            results = list;
             return this;
         }
 
@@ -823,8 +823,10 @@ namespace NonIntrusive
             }
 
             uint size = lde.ldasm(data, 0, false).size;
+            byte[] codes = new byte[size];
+            Array.Copy(data, codes, size);
 
-            return data;
+            return codes;
         }
 
         /// <summary>
@@ -1043,6 +1045,18 @@ namespace NonIntrusive
                         {
                             nextAddress = GetRegisterByNumber(reg1);
                             nextAddress = (uint)((int)nextAddress + BitConverter.ToInt32(data, ldata.disp_offset));
+                        }
+                        else if (mod == 3)
+                        {
+                            if (reg1 != 4)
+                            {
+                                nextAddress = GetRegisterByNumber(reg1);
+                            }
+                            else
+                            {
+                                nextAddress = Context.Eip;
+                            }
+                            
                         }
                     }
                     if (mod != 3)
